@@ -57,13 +57,15 @@
 <h1>MQTT Publisher</h1>
 <input type="number" id="phone_num" placeholder="Enter the phone numer">
 <input type="text" id="user_message" placeholder="Enter a message to publish">
+<input type="date" id="date" placeholder="Choose date you want">
+<input type="time" id="time" placeholder="Choose time you want">
 <button id = "first_click" onclick="publish()">Publish</button>
 <div id="snackbar">Published</div>
 
 <!-- <button onclick="getElementById('demo1').innerHTML=Date()">What is the time?</button>
 <p id="demo1"></p> -->
 
-<!-- Print all message published -->
+<!-- Print all message published can make it collapsible-->
 
 <h1>Published Message</h1>
 <button onclick="hide_show_pm()">Hide/Show</button>
@@ -119,7 +121,8 @@ function publish() {
   function onConnect(){
     console.log("Connected!");
     // create log text
-    var m_topic = time +". Message: "+ document.getElementById("user_message").value+ ", Topic: cfprj/"+ document.getElementById("phone_num").value+"/test";
+    var m_topic = time +". Message: "+ document.getElementById("user_message").value
+    + ", Topic: cfprj/"+ document.getElementById("phone_num").value+"/test, Date: "+ document.getElementById("date").value+", Time: "+document.getElementById("time").value;
     time = time +1;
     // add new message and topic to message array
     message_arr.push(m_topic);
@@ -128,7 +131,13 @@ function publish() {
     }
     
     // send message
-    var message = new Paho.MQTT.Message(document.getElementById("user_message").value);
+    const json_message = {
+      message: document.getElementById("user_message").value,
+      date: document.getElementById("date").value,
+      time: document.getElementById("time").value,
+    }
+    const json_message_pub = JSON.stringify(json_message); 
+    var message = new Paho.MQTT.Message(json_message_pub);
     var topic = "cfprj/" + document.getElementById("phone_num").value + "/test";
     message.destinationName = topic;
     message.qos = 0;
