@@ -5,6 +5,11 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.js" type="text/javascript"></script>
   <style>
+    #messageBox {
+    border: 1px solid black;
+    height: 200px;
+    overflow-y: auto;
+    }
     #snackbar {
     visibility: hidden;
     min-width: 250px;
@@ -61,34 +66,38 @@
 <!-- Print all message published -->
 
 <h1>Published Message</h1>
-<button onclick="hide_show1()">Hide/Show</button>
-<div id="hide1">
-<div id="all_message"></div>
+<button onclick="hide_show_pm()">Hide/Show</button>
+<div id="hide_pm">
+<div id="messageBox">
+<ul id="messages"></ul>
+</div>
 </div>
 <h1>Schedule</h1>
-<button onclick="hide_show2()">Hide/Show</button>
-<div id="hide2">
+<button onclick="hide_show_s()">Hide/Show</button>
+<div id="hide_s">
 <div id="all_message"></div>
 </div>
 
 <script>
-var time = 1
-function hide_show1() {
-  var x = document.getElementById("hide1");
+var message_arr = [];
+var time = 1;
+function hide_show_pm() {
+  var x = document.getElementById("hide_pm");
   if (x.style.display === "none") {
     x.style.display = "block";
   } else {
     x.style.display = "none";
   }
 }
-function hide_show2() {
-  var x = document.getElementById("hide2");
+function hide_show_s() {
+  var x = document.getElementById("hide_s");
   if (x.style.display === "none") {
     x.style.display = "block";
   } else {
     x.style.display = "none";
   }
 }
+
 function publish() { 
   // Create a new MQTT client
   const number = Math.floor(Math.random() * 100);
@@ -112,6 +121,12 @@ function publish() {
     // create log text
     var m_topic = time +". Message: "+ document.getElementById("user_message").value+ ", Topic: cfprj/"+ document.getElementById("phone_num").value+"/test";
     time = time +1;
+    // add new message and topic to message array
+    message_arr.push(m_topic);
+    if (message_arr.length > 15) {
+        message_arr.shift();
+    }
+    
     // send message
     var message = new Paho.MQTT.Message(document.getElementById("user_message").value);
     var topic = "cfprj/" + document.getElementById("phone_num").value + "/test";
@@ -124,11 +139,18 @@ function publish() {
     x.className = "show";
     setTimeout(function(){ x.className = x.className.replace("show", ""); }, 3000);
 
+    function updateMessages(){
+      document.getElementById("messages").innerHTML = "";
+      for (var i = message_arr.length - 1; i >= 0; i--) {
+        var message = message_arr[i];
+        var li = document.createElement("li");
+        li.innerHTML = message;
 
-
-
+        document.getElementById("messages").appendChild(li);
+      }
+    }
     document.getElementById("all_message").innerHTML += "<br>" + m_topic;
-
+    updateMessages();
   }
 }
 </script>
