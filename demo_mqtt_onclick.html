@@ -10,7 +10,7 @@
     height: 200px;
     overflow-y: auto;
     }
-    #snackbar {
+    #snackbar_ok {
     visibility: hidden;
     min-width: 250px;
     margin-left: -125px;
@@ -26,12 +26,32 @@
     font-size: 17px;
     }
 
-    #snackbar.show {
+    #snackbar_ok.show {
       visibility: visible;
       -webkit-animation: fadein 0.5s, fadeout 0.5s 2.5s;
       animation: fadein 0.5s, fadeout 0.5s 2.5s;
     }
+    #snackbar_err {
+    visibility: hidden;
+    min-width: 250px;
+    margin-left: -125px;
+    background-color: #333;
+    color: #fff;
+    text-align: center;
+    border-radius: 2px;
+    padding: 16px;
+    position: fixed;
+    z-index: 1;
+    left: 50%;
+    bottom: 30px;
+    font-size: 17px;
+    }
 
+    #snackbar_err.show {
+      visibility: visible;
+      -webkit-animation: fadein 0.5s, fadeout 0.5s 2.5s;
+      animation: fadein 0.5s, fadeout 0.5s 2.5s;
+    }
     @-webkit-keyframes fadein {
       from {bottom: 0; opacity: 0;} 
       to {bottom: 30px; opacity: 1;}
@@ -51,23 +71,70 @@
       from {bottom: 30px; opacity: 1;}
       to {bottom: 0; opacity: 0;}
     }
+    
+    .collapsible {
+    background-color: #777;
+    color: white;
+    cursor: pointer;
+    padding: 18px;
+    width: 100%;
+    border: none;
+    text-align: left;
+    outline: none;
+    font-size: 15px;
+    }
+
+    .active, .collapsible:hover {
+      background-color: #555;
+    }
+
+    .content {
+      padding: 0 18px;
+      display: none;
+      overflow: hidden;
+      background-color: #f1f1f1;
+    }
+    .block {
+      display: block;
+      width: 100%;
+      border: none;
+      color: white;
+      background-color: #20199e;
+      padding: 14px 28px;
+      font-size: 16px;
+      cursor: pointer;
+      text-align: center;
+    }
   </style>
 </head>
 <body>
 <h1>MQTT Publisher</h1>
+<!-- INPUT -->
 <input type="number" id="phone_num" placeholder="Enter the phone numer">
 <input type="text" id="user_message" placeholder="Enter a message to publish">
 <input type="date" id="date" placeholder="Choose date you want">
 <input type="time" id="time" placeholder="Choose time you want">
-<button id = "first_click" onclick="publish()">Publish</button>
-<div id="snackbar">Published</div>
+<p></p>
 
-<!-- <button onclick="getElementById('demo1').innerHTML=Date()">What is the time?</button>
-<p id="demo1"></p> -->
+<!-- BUTTON -->
+<button type="button" class="block" id = "first_click" onclick="publish()">Publish</button>
+<div id="snackbar_ok">Published</div>
+<div id="snackbar_err">Please fill all the box</div>
 
-<!-- Print all message published can make it collapsible-->
-
-<h1>Published Message</h1>
+<p></p>
+<button type="button" class="collapsible">Published Message Collapsible</button>
+<div class="content">
+  <!-- <div id="messageBox">
+  <ul id="messages"></ul>
+  </div> -->
+<div id="messages">
+</div>
+</div>
+<button type="button" class="collapsible">Schedule Collapsible</button>
+<div class="content">
+<div id="all_message"></div>
+</div>
+<!-- <h1>Published Message</h1>
 <button onclick="hide_show_pm()">Hide/Show</button>
 <div id="hide_pm">
 <div id="messageBox">
@@ -78,9 +145,25 @@
 <button onclick="hide_show_s()">Hide/Show</button>
 <div id="hide_s">
 <div id="all_message"></div>
-</div>
+</div> -->
 
 <script>
+// make it collabsible 
+var coll = document.getElementsByClassName("collapsible");
+var i;
+
+for (i = 0; i < coll.length; i++) {
+  coll[i].addEventListener("click", function() {
+    this.classList.toggle("active");
+    var content = this.nextElementSibling;
+    if (content.style.display === "block") {
+      content.style.display = "none";
+    } else {
+      content.style.display = "block";
+    }
+  });
+}
+// global varibles
 var message_arr = [];
 var time = 1;
 function hide_show_pm() {
@@ -121,16 +204,24 @@ function publish() {
   function onConnect(){
     console.log("Connected!");
     // create log text
+    if (document.getElementById("phone_num").value =="" || document.getElementById("user_message").value == "" || document.getElementById("date").value == "" || document.getElementById("time").value == "")
+     {
+      console.log("Error, fill all box")
+      var y = document.getElementById("snackbar_err");
+      y.className = "show";
+      setTimeout(function(){ y.className = y.className.replace("show", ""); }, 3000);
+      }
+    else{
     var m_topic = time +". Message: "+ document.getElementById("user_message").value
     + ", Topic: cfprj/"+ document.getElementById("phone_num").value+"/test, Date: "+ document.getElementById("date").value+", Time: "+document.getElementById("time").value;
     time = time +1;
     // add new message and topic to message array
     message_arr.push(m_topic);
-    if (message_arr.length > 15) {
+    if (message_arr.length > 5) {
         message_arr.shift();
     }
     
-    // send message
+    // send message, json format 
     const json_message = {
       message: document.getElementById("user_message").value,
       date: document.getElementById("date").value,
@@ -143,24 +234,25 @@ function publish() {
     message.qos = 0;
     client.send(message);
     console.log(m_topic);
+
     // show snackbar for 3 sec
-    var x = document.getElementById("snackbar");
+    var x = document.getElementById("snackbar_ok");
     x.className = "show";
     setTimeout(function(){ x.className = x.className.replace("show", ""); }, 3000);
 
+    // screen reverse message
     function updateMessages(){
       document.getElementById("messages").innerHTML = "";
       for (var i = message_arr.length - 1; i >= 0; i--) {
         var message = message_arr[i];
         var li = document.createElement("li");
         li.innerHTML = message;
-
         document.getElementById("messages").appendChild(li);
       }
     }
     document.getElementById("all_message").innerHTML += "<br>" + m_topic;
     updateMessages();
-  }
+  }}
 }
 </script>
 </body>
